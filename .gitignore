@@ -1,0 +1,6 @@
+basg/
+build/
+install/
+log/
+templates/
+.vscode
