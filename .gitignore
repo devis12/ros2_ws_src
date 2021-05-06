@@ -4,3 +4,4 @@ install/
 log/
 templates/
 .vscode
+pddl_examples/
