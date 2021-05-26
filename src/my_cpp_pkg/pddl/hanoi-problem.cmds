@@ -1,0 +1,26 @@
+set instance disk1 disk
+set instance disk2 disk
+set instance disk3 disk
+set instance peg1 disk
+set instance peg2 disk
+set instance peg3 disk
+set instance my_arm arm
+set predicate (not_moving my_arm)
+set predicate (smaller disk1 disk2)
+set predicate (smaller disk2 disk3)
+set predicate (smaller disk1 peg1)
+set predicate (smaller disk1 peg2)
+set predicate (smaller disk1 peg3)
+set predicate (smaller disk2 peg1)
+set predicate (smaller disk2 peg2)
+set predicate (smaller disk2 peg3)
+set predicate (smaller disk3 peg1)
+set predicate (smaller disk3 peg2)
+set predicate (smaller disk3 peg3)
+set predicate (clear disk1)
+set predicate (clear peg2)
+set predicate (clear peg3)
+set predicate (on disk1 disk2)
+set predicate (on disk2 disk3)
+set predicate (on disk3 peg1)
+set goal (and (clear disk1) (clear peg1) (clear peg2) (on disk1 disk2) (on disk2 disk3) (on disk3 peg3) )
