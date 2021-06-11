@@ -1,0 +1,24 @@
+set instance turtle1 turtle
+set instance turtle2 turtle
+set instance turtle3 turtle
+set instance turtle4 turtle
+set instance turtle5 turtle
+
+set function (turtleseaten turtle1 0)
+set function (distance turtle1 turtle2 2.5)
+set function (distance turtle1 turtle3 2.5)
+set function (distance turtle1 turtle4 2.5)
+set function (distance turtle1 turtle5 2.5)
+
+set predicate (control turtle1)
+set predicate (targetfree turtle1)
+set predicate (alive turtle1)
+set predicate (alive turtle2)
+set predicate (alive turtle3)
+set predicate (alive turtle4)
+set predicate (alive turtle5)
+
+set goal (and (eaten turtle2) (eaten turtle3) (eaten turtle4) (eaten turtle5))
+
+# DOMANDA DA FARE: come goal posso mettere valore di una funzione
+# set goal (and (= (turtlesEaten turtle1) 4))

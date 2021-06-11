@@ -19,6 +19,7 @@ rosidl_generate_interfaces( ${PROJECT_NAME}
   "msg/Turtle.msg"
   "msg/TurtleArray.msg"
   "srv/CatchTurtle.srv"
+  "srv/TurtlePose.srv"
 )
 
 ament_package()

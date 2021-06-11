@@ -109,8 +109,28 @@ private:
         alive_turtles_ = msg->turtles;
         RCLCPP_INFO(this->get_logger(), "Alive turtles callback; current target name: " + target_pos_.name);
         
+        if(target_pos_.name != "" && !isCurrentTargetStillAlive())
+        {
+            RCLCPP_INFO(this->get_logger(), "NOT ALIVE! current target name: " + target_pos_.name);
+            removeTurtle(target_pos_);
+        }
+        
         if(target_pos_.name == "")
             acquireNewTarget();
+        
+    }
+
+    bool isCurrentTargetStillAlive()
+    {
+        if(target_pos_.name == "")
+            return false;
+
+        bool found = false;
+        for (auto it = alive_turtles_.begin(); !found && it != alive_turtles_.end(); ++it)
+            if( (*it).name == target_pos_.name )
+                found = true;
+
+        return found;
     }
 
     void removeTurtle(const TurtleSpawn turtle)
@@ -127,8 +147,12 @@ private:
         if(found)
         {    
             alive_turtles_.erase(itDel);
-            target_pos_.name = "";
-            RCLCPP_INFO(this->get_logger(), "Eaten '" + turtle.name + "'");
+            if(turtle.name == target_pos_.name)
+            {
+                target_pos_.name = "";
+                RCLCPP_INFO(this->get_logger(), "Eaten '" + turtle.name + "'");
+                acquireNewTarget();
+            }
         }
     }       
 
