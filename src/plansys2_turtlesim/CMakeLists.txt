@@ -27,11 +27,14 @@ set(plansys2_dependencies
     plansys2_executor
 )
 
-add_executable(turtles_master src/turtles_master.cpp)
+add_executable(turtles_master src/no_plan/turtles_master.cpp)
 ament_target_dependencies(turtles_master rclcpp ${turtle_dependencies})
 
-add_executable(turtle_controller src/turtle_controller.cpp)
+add_executable(turtle_controller src/no_plan/turtle_controller.cpp)
 ament_target_dependencies(turtle_controller rclcpp ${turtle_dependencies} geometry_msgs)
+
+add_executable(turtle_pose_echo src/no_plan/turtle_pose_echo.cpp)
+ament_target_dependencies(turtle_pose_echo rclcpp turtlesim)
 
 add_executable(eating src/actions/eating.cpp)
 ament_target_dependencies(eating rclcpp ${plansys2_dependencies} turtlesim)
@@ -43,7 +46,11 @@ add_executable(acquiretarget src/actions/acquiretarget.cpp)
 ament_target_dependencies(acquiretarget rclcpp ${plansys2_dependencies})
 
 add_executable(spawner src/problem_experts/spawner.cpp)
-ament_target_dependencies(spawner rclcpp plansys2_problem_expert turtlesim)
+ament_target_dependencies(spawner rclcpp plansys2_problem_expert ${turtle_dependencies})
+
+add_executable(compdistances src/problem_experts/computedistances.cpp)
+ament_target_dependencies(compdistances rclcpp plansys2_problem_expert ${turtle_dependencies})
+
 
 install(TARGETS
   turtles_master
@@ -52,6 +59,8 @@ install(TARGETS
   movetoward
   acquiretarget
   spawner
+  compdistances
+  turtle_pose_echo
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -26,8 +26,8 @@ using turtlesim_final_interfaces::srv::TurtlePose;
 
 typedef struct{
   string name;
-  float posx;
-  float posy;
+  double posx;
+  double posy;
 }Turtle;
 
 class MoveToward : public plansys2::ActionExecutorClient
@@ -45,20 +45,25 @@ public:
         controlled_name_ = "turtle1";
     }
 
-    position_subscriber_ = this->create_subscription<Pose>(
-            controlled_name_+"/pose", 10,
-            bind(&MoveToward::callbackCurrPose, this, _1));
-
     progress_ = 0.0;
     starting_distance_ = -1.0;
     turtlesim_up_ = false;
     current_target_= {.name = "", .posx = -1.0, .posy = -1.0};
     consultingKB_ = false;
+
+    //PROVATO ANCHE IN on_activate()
+    /*position_subscriber_ = this->create_subscription<Pose>(
+            controlled_name_+"/pose", 10,
+            bind(&MoveToward::callbackCurrPose, this, _1));*/
   }
 
    rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
   on_activate(const rclcpp_lifecycle::State & previous_state)
   {
+
+    position_subscriber_ = this->create_subscription<Pose>(
+            controlled_name_+"/pose", 10,
+            bind(&MoveToward::callbackCurrPose, this, _1));
 
     cmd_vel_pub_ = this->create_publisher<Twist>(controlled_name_ + "/cmd_vel", 10);
     cmd_vel_pub_->on_activate();
@@ -80,8 +85,8 @@ private:
     {
         controlled_pos_ = *msg;
         turtlesim_up_ = true;
-        RCLCPP_INFO(this->get_logger(), "turtle1 pose -> x: %.1f, y: %.1f", 
-                current_target_.posx, current_target_.posy);
+        RCLCPP_INFO(this->get_logger(), "turtle1 pose -> x: %.1f, y: %.1f, theta: %.1f", 
+                controlled_pos_.x, controlled_pos_.y, controlled_pos_.theta);
     }
     
     double distanceFromTarget()
@@ -91,44 +96,33 @@ private:
         return sqrt(dist_x * dist_x + dist_y * dist_y);
     }
 
-    void callGetPoseNewTarget(const string turtlename)
+    double extractPositionVal(string s)
     {
-        rclcpp::Client<TurtlePose>::SharedPtr client_ = this->create_client<TurtlePose>("get_pose");
-        while(!client_->wait_for_service(std::chrono::seconds(1)))
-            RCLCPP_WARN(this->get_logger(), "Waiting for /get_pose to be up");
+      string s_int = s.substr(2,s.find_first_of("_")-2);
+      string s_dec = s.substr(s.find_first_of("_")+1);
+      double integer =  stoi(s_int) * 1.0;
+      double decimal = stoi(s_dec)  * 1.0;
+      for(int i=0; i<s_dec.length(); i++)
+          decimal *= 0.1;
 
-        auto request = std::make_shared<TurtlePose::Request>();
-        request->name = turtlename;
-        auto future = client_->async_send_request(request);
-
-        try{
-            auto response = future.get();
-            current_target_ = {.name = turtlename, .posx = response->posx, .posy = response->posy};
-            consultingKB_ = false;
-        }catch(const std::exception &e){
-            RCLCPP_ERROR(this->get_logger(), "Response error in /get_pose turtle '" + turtlename + "'");
-        }
+      return integer + decimal;
     }
 
-    void getTargetFromKB(string turtlename)
+    Turtle extractTarget(string turtlename, string s_posx, string s_posy)
     {
-      consultingKB_ = true;
-      std::shared_ptr<thread> thr = 
-                std::make_shared<thread>(bind(&MoveToward::callGetPoseNewTarget, this, turtlename));
-      thr->detach();
+      return Turtle 
+        { .name=turtlename, 
+          .posx=extractPositionVal(s_posx), 
+          .posy=extractPositionVal(s_posy)};
     }
 
-
-    void moveTowardsTarget(string turtlename)
+    void moveTowardsTarget()
     {
-        if(current_target_.name == "" || current_target_.posx < 0 || current_target_.posy < 0)
-        {
-          if(!consultingKB_)
-            getTargetFromKB(turtlename);
-        }
+        if(!turtlesim_up_ || current_target_.name == "" || current_target_.posx < 0 || current_target_.posy < 0)
+          return;
 
         double curr_distance = distanceFromTarget();
-        RCLCPP_INFO(this->get_logger(), "current target: " + turtlename + "' in x: %.1f, y: %.1f (d = %.2f)", 
+        RCLCPP_INFO(this->get_logger(), "current target: " + current_target_.name + "' in x: %.1f, y: %.1f (d = %.2f)", 
                 current_target_.posx, current_target_.posy, curr_distance);
 
         if(starting_distance_ < 0)
@@ -181,7 +175,24 @@ private:
   void do_work()
   {
     vector<string> args = get_arguments();
-    moveTowardsTarget(args[1]);
+    current_target_ = extractTarget(args[1], args[2], args[3]);
+    moveTowardsTarget();
+    /* FAKE PROGRESS
+    if (progress_ < 1.0) {
+      progress_ += 0.5;
+      send_feedback(progress_, "Move towards target running");
+    } else {
+      finish(true, 1.0, "Move towards target completed");
+
+      progress_ = 0.0;
+    }
+
+    float progress_100 = ((progress_ * 100.0) < 100.0)? (progress_ * 100.0) : 100.0; 
+    RCLCPP_INFO(this->get_logger(), 
+      "["+ args[0] + " move towards target " +  args[1] + "] "+ 
+      "progress: %.1f%%", progress_100);
+    */
+    
   }
 
   float progress_;

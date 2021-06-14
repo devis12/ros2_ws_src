@@ -1,3 +1,5 @@
+#include <cstdlib>
+#include <ctime>
 #include <memory>
 #include <vector>
 
@@ -7,9 +9,13 @@
 
 #include "turtlesim/srv/spawn.hpp"
 
+#include "turtlesim_final_interfaces/msg/turtle_spawn.hpp"
+#include "turtlesim_final_interfaces/msg/turtle_array.hpp"
+
 using std::string;
 using std::vector;
 using std::shared_ptr;
+using std::chrono::milliseconds;
 using std::thread;
 using std::bind;
 
@@ -19,6 +25,8 @@ using plansys2::Predicate;
 using plansys2::Function;
 
 using turtlesim::srv::Spawn;
+using turtlesim_final_interfaces::msg::TurtleSpawn;
+using turtlesim_final_interfaces::msg::TurtleArray;
 
 typedef enum {STARTING, SPAWNING, PAUSE} StateType;
 
@@ -28,12 +36,29 @@ public:
   Spawner()
   : rclcpp::Node("spawner_controller"), state_(STARTING)
   {
-      comm_errors_ = 0;
+    comm_errors_ = 0;
+    this->declare_parameter("pub_frequency", 0.5); // 0.125 is default value to be published
   }
 
   void init()
-  {
+  { 
+    double pub_frequency = 0.5;
+    try{
+        pub_frequency = this->get_parameter("pub_frequency").as_double();
+    }catch(std::exception&){
+        RCLCPP_ERROR(this->get_logger(), "pub_frequency must be a positive number and will be automatically set to 500mHz");
+        pub_frequency = 0.5;
+    }
+
+    
     problem_expert_ = std::make_shared<ProblemExpertClient>(shared_from_this());
+    srand (static_cast <unsigned> (time(0)));//for random generation
+
+    alive_turtles_publisher_ = this->create_publisher<TurtleArray>("alive_turtles", 10);
+
+    alive_publisher_timer_ = this->create_wall_timer(
+        milliseconds((int)(1000.0 / pub_frequency)),
+        bind(&Spawner::publishAliveTurtles, this));
   }
 
   void step()
@@ -76,6 +101,16 @@ private:
         state_ = state;
     }
 
+    string extractPosName(string prefix, double val, int num_decimal=2)
+    {
+        int int_val = (int)val;
+        double d_dec_val = val - int_val;
+        string s_dec_val = std::to_string(d_dec_val);
+        s_dec_val = s_dec_val.substr(s_dec_val.find_first_of(".")+1, num_decimal);
+        int dec_val = (int)d_dec_val;
+        return  prefix + std::to_string(int_val) + "_" +  s_dec_val; 
+    }
+
     float getRandomX()
     {
         
@@ -112,6 +147,12 @@ private:
         done = done && problem_expert_->addPredicate(Predicate("(targetfree turtle1)"));
         done = done && problem_expert_->addPredicate(Predicate("(alive turtle1)"));
 
+        done = done && problem_expert_->addInstance(Instance{"px5_54", "pos"});
+        done = done && problem_expert_->addInstance(Instance{"py5_54", "pos"});
+
+        done = done && problem_expert_->addPredicate(Predicate("(posx turtle1 px5_54)"));
+        done = done && problem_expert_->addPredicate(Predicate("(posy turtle1 py5_54)"));
+
         done = done && problem_expert_->addFunction(Function("(turtleseaten turtle1 0)"));
 
         return done;
@@ -134,33 +175,6 @@ private:
         this->counter_++;
     }
 
-    /*
-    void checkIfProblemExpertActive()
-    {
-        
-        rclcpp::Client<GetState>::SharedPtr client_ = this->create_client<GetState>("/problem_expert/get_state");
-            while(!client_->wait_for_service(std::chrono::seconds(1)))
-                RCLCPP_WARN(this->get_logger(), "Waiting for /problem_expert/get_state to be up");
-
-        auto request = std::make_shared<GetState::Request>();
-    
-        auto future = client_->async_send_request(request);
-
-        try{
-            auto response = future.get();
-
-            if(response->current_state.label == "active"){
-                if(initKnowledge())
-                    setState(SPAWNING);
-            }
-
-        
-        }catch(const std::exception &e){
-            RCLCPP_ERROR(this->get_logger(), "Cannot retrieve problem expert state!\n Exception: %s", e.what());
-        }
-    }
-    */
-
     void callSpawnTurtleService(int count, float x, float y, float theta, string name)
     {
         
@@ -180,9 +194,18 @@ private:
             auto response = future.get();
 
             if(response->name == request->name){
+                addTurtle(name, x, y, theta);
+                
                 problem_expert_->addInstance(Instance{response->name, "turtle"});
                 problem_expert_->addPredicate(Predicate("(alive " + response->name +")"));
                 problem_expert_->addFunction(Function("(distance turtle1 " + response->name + " 11)"));
+                
+                string px = extractPosName("px", x);
+                string py = extractPosName("py", y);
+                problem_expert_->addInstance(Instance{px, "pos"});
+                problem_expert_->addInstance(Instance{py, "pos"});
+                problem_expert_->addPredicate(Predicate("(posx " + response->name + " " + px + ")"));
+                problem_expert_->addPredicate(Predicate("(posy " + response->name + " " + py + ")"));
             }
 
         }catch(const std::exception &e){
@@ -190,11 +213,52 @@ private:
         }
         
     }
+
+    void addTurtle(string name, float x, float y, float theta)
+    {
+        TurtleSpawn newTurtle = TurtleSpawn();
+        newTurtle.name = name;
+        newTurtle.x = x;
+        newTurtle.y = y;
+        newTurtle.theta = theta;
+        alive_turtles_.push_back(newTurtle);
+        publishAliveTurtles();
+    }
+
+     void removeTurtle(string name)
+    {   
+        vector<TurtleSpawn>::iterator itDel;
+        bool found = false;
+        for (vector<TurtleSpawn>::iterator it = alive_turtles_.begin() ; !found && it != alive_turtles_.end(); it++)
+        {
+            if((*it).name == name)
+            {
+                itDel = it; found = true;
+            }
+        }
+
+        if(found)
+        {
+            alive_turtles_.erase(itDel);
+            publishAliveTurtles();
+        }
+    }
+
+    void publishAliveTurtles()
+    {
+        auto msg = TurtleArray();
+        msg.turtles = alive_turtles_;
+        alive_turtles_publisher_->publish(msg);
+    }
+
     StateType state_;
     int comm_errors_;
     std::shared_ptr<ProblemExpertClient> problem_expert_;
 
     int counter_;
+    vector<TurtleSpawn> alive_turtles_;
+    rclcpp::Publisher<TurtleArray>::SharedPtr alive_turtles_publisher_;
+    rclcpp::TimerBase::SharedPtr alive_publisher_timer_;
 
     vector<shared_ptr<thread>> spawn_turtle_threads_;
 

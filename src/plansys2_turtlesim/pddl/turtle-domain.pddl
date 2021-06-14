@@ -6,6 +6,7 @@
 
     ;; Types ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     (:types
+        pos
         turtle
     );; end Types ;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -15,6 +16,8 @@
         (currenttarget ?t - turtle)
         (alive ?t - turtle)
         (eaten ?t - turtle)
+        (posx ?t - turtle ?p - pos)
+        (posy ?t - turtle ?p - pos)
     )
 
     (:functions
@@ -37,16 +40,20 @@
     )
 
     (:durative-action movetoward
-        :parameters (?t1 ?t2 - turtle)
+        :parameters (?t1 ?t2 - turtle ?p2x ?p2y - pos)
         :duration (= ?duration 4)
         :condition (and
             (at start (> (distance ?t1 ?t2) 0))
             (over all (control ?t1))
+            (over all (posx ?t2 ?p2x))
+            (over all (posy ?t2 ?p2y))
             (over all (currenttarget ?t2))
             (over all (alive ?t2))
         )
         :effect (and
             (at end (assign (distance ?t1 ?t2) 0))
+            (at end (posx ?t1 ?p2x))
+            (at end (posy ?t1 ?p2y))
         )
     )
 

@@ -70,6 +70,14 @@ def generate_launch_description():
         namespace=namespace,
         output='screen',
         parameters=[])
+
+    compdistances = Node(
+        package='plansys2_turtlesim',
+        executable='compdistances',
+        name='compdistances',
+        namespace=namespace,
+        output='screen',
+        parameters=[])
     
     ld = LaunchDescription()
 
@@ -90,5 +98,6 @@ def generate_launch_description():
 
     #Problem experts
     ld.add_action(spawner)
+    ld.add_action(compdistances)
 
     return ld
