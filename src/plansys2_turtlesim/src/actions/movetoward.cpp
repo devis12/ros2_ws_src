@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "plansys2_executor/ActionExecutorClient.hpp"
+#include "plansys2_problem_expert/ProblemExpertClient.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
@@ -19,6 +20,8 @@ using std::string;
 using std::thread;
 using std::bind;
 using std::placeholders::_1;
+
+using plansys2::ProblemExpertClient;
 
 using geometry_msgs::msg::Twist;
 using turtlesim::msg::Pose;
@@ -49,22 +52,15 @@ public:
     starting_distance_ = -1.0;
     turtlesim_up_ = false;
     current_target_= {.name = "", .posx = -1.0, .posy = -1.0};
-    consultingKB_ = false;
 
-    //PROVATO ANCHE IN on_activate()
-    /*position_subscriber_ = this->create_subscription<Pose>(
+    position_subscriber_ = this->create_subscription<Pose>(
             controlled_name_+"/pose", 10,
-            bind(&MoveToward::callbackCurrPose, this, _1));*/
+            bind(&MoveToward::callbackCurrPose, this, _1));
   }
 
    rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
   on_activate(const rclcpp_lifecycle::State & previous_state)
   {
-
-    position_subscriber_ = this->create_subscription<Pose>(
-            controlled_name_+"/pose", 10,
-            bind(&MoveToward::callbackCurrPose, this, _1));
-
     cmd_vel_pub_ = this->create_publisher<Twist>(controlled_name_ + "/cmd_vel", 10);
     cmd_vel_pub_->on_activate();
 
@@ -85,8 +81,8 @@ private:
     {
         controlled_pos_ = *msg;
         turtlesim_up_ = true;
-        RCLCPP_INFO(this->get_logger(), "turtle1 pose -> x: %.1f, y: %.1f, theta: %.1f", 
-                controlled_pos_.x, controlled_pos_.y, controlled_pos_.theta);
+        /*RCLCPP_INFO(this->get_logger(), "turtle1 pose -> x: %.1f, y: %.1f, theta: %.1f", 
+                controlled_pos_.x, controlled_pos_.y, controlled_pos_.theta);*/
     }
     
     double distanceFromTarget()
@@ -116,6 +112,11 @@ private:
           .posy=extractPositionVal(s_posy)};
     }
 
+    bool validTarget(Turtle turtle)
+    {
+      return turtle.name != "" && turtle.posx >= 0 && turtle.posy >= 0;
+    }
+
     void moveTowardsTarget()
     {
         if(!turtlesim_up_ || current_target_.name == "" || current_target_.posx < 0 || current_target_.posy < 0)
@@ -124,9 +125,6 @@ private:
         double curr_distance = distanceFromTarget();
         RCLCPP_INFO(this->get_logger(), "current target: " + current_target_.name + "' in x: %.1f, y: %.1f (d = %.2f)", 
                 current_target_.posx, current_target_.posy, curr_distance);
-
-        if(starting_distance_ < 0)
-          starting_distance_ = curr_distance;
 
         Twist msg = Twist();
 
@@ -157,11 +155,6 @@ private:
             msg.linear.x = 0.0;
             msg.angular.z = 0.0;
             finish(true, 1.0, "Move toward completed");
-
-            progress_ = 0.0;
-            starting_distance_ = -1.0;
-            current_target_= {.name = "", .posx = -1.0, .posy = -1.0};
-            consultingKB_ = false;
         }
 
         cmd_vel_pub_->publish(msg);
@@ -175,30 +168,23 @@ private:
   void do_work()
   {
     vector<string> args = get_arguments();
-    current_target_ = extractTarget(args[1], args[2], args[3]);
-    moveTowardsTarget();
-    /* FAKE PROGRESS
-    if (progress_ < 1.0) {
-      progress_ += 0.5;
-      send_feedback(progress_, "Move towards target running");
-    } else {
-      finish(true, 1.0, "Move towards target completed");
-
+    Turtle target = extractTarget(args[1], args[2], args[3]); //args 2-3 initial position of controlled turtle (turtle1)
+    
+    if(current_target_.name != target.name && validTarget(target))//new target acquired
+    {
+      current_target_ = target;
+      starting_distance_ = distanceFromTarget();
       progress_ = 0.0;
     }
 
-    float progress_100 = ((progress_ * 100.0) < 100.0)? (progress_ * 100.0) : 100.0; 
-    RCLCPP_INFO(this->get_logger(), 
-      "["+ args[0] + " move towards target " +  args[1] + "] "+ 
-      "progress: %.1f%%", progress_100);
-    */
-    
+    if(current_target_.name == target.name && 
+        current_target_.posx == target.posx && current_target_.posx == target.posx && progress_ < 1)
+      moveTowardsTarget();
   }
 
   float progress_;
   float starting_distance_;
   bool turtlesim_up_;
-  bool consultingKB_;
   string controlled_name_;
   Pose controlled_pos_;
 
@@ -206,7 +192,6 @@ private:
 
   rclcpp_lifecycle::LifecyclePublisher<Twist>::SharedPtr cmd_vel_pub_;
   rclcpp::Subscription<Pose>::SharedPtr position_subscriber_;
-
 
   const double COLLIDE_DISTANCE = 0.32;
 };

@@ -78,6 +78,14 @@ def generate_launch_description():
         namespace=namespace,
         output='screen',
         parameters=[])
+
+    cleanupKB = Node(
+        package='plansys2_turtlesim',
+        executable='cleanupKB',
+        name='cleanupKB',
+        namespace=namespace,
+        output='screen',
+        parameters=[])
     
     ld = LaunchDescription()
 
@@ -99,5 +107,6 @@ def generate_launch_description():
     #Problem experts
     ld.add_action(spawner)
     ld.add_action(compdistances)
+    ld.add_action(cleanupKB)
 
     return ld

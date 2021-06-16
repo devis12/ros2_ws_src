@@ -30,8 +30,7 @@ private:
       send_feedback(progress_, "Acquire target running");
     } else {
       finish(true, 1.0, "Acquire target completed");
-
-      progress_ = 0.0;
+      progress_ = 0.0;//reset progress for next time action is called
     }
 
     float progress_100 = ((progress_ * 100.0) < 100.0)? (progress_ * 100.0) : 100.0; 

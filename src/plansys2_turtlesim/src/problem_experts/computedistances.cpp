@@ -57,6 +57,8 @@ public:
                 bind(&ComputeDistances::callbackAliveTurtles, this, _1));
 
     problem_expert_ = std::make_shared<ProblemExpertClient>(shared_from_this());
+
+    RCLCPP_INFO(this->get_logger(), "Compute distances node initialized");
   }
 
   void step()

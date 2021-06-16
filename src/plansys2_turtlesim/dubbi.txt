@@ -1,0 +1,11 @@
+###Spawner crashes (NOT always though :-/)
+
+In questo scenario, spariscono tutti i servizi che vengono
+esposti da turtlesim (come se turtlesim fosse crashato, anche se la UI è ancora lì)
+
+[spawner-6] 2021-06-15 17:25:08.295 [PARTICIPANT Error] Type : turtlesim::srv::dds_::Spawn_Response_ Not Registered -> Function createSubscriber
+[spawner-6] terminate called after throwing an instance of 'rclcpp::exceptions::RCLError'
+[spawner-6]   what():  could not create client: failed to create client response subscriber, at /tmp/binarydeb/ros-foxy-rmw-fastrtps-cpp-1.2.5/src/rmw_client.cpp:214, at /tmp/binarydeb/ros-foxy-rcl-1.1.11/src/rcl/client.c:175
+[ERROR] [spawner-6]: process has died [pid 18015, exit code -6, cmd '/home/devis/ros2_ws/install/plansys2_turtlesim/lib/plansys2_turtlesim/spawner --ros-args -r __node:=spawner -r __ns:=/'].
+
+

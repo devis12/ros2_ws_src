@@ -2,6 +2,7 @@
 #include <ctime>
 #include <memory>
 #include <vector>
+#include <mutex>
 
 #include "plansys2_problem_expert/ProblemExpertClient.hpp"
 
@@ -18,6 +19,7 @@ using std::shared_ptr;
 using std::chrono::milliseconds;
 using std::thread;
 using std::bind;
+using std::mutex;
 
 using plansys2::ProblemExpertClient;
 using plansys2::Instance;
@@ -28,7 +30,7 @@ using turtlesim::srv::Spawn;
 using turtlesim_final_interfaces::msg::TurtleSpawn;
 using turtlesim_final_interfaces::msg::TurtleArray;
 
-typedef enum {STARTING, SPAWNING, PAUSE} StateType;
+typedef enum {STARTING, SPAWNING, PAUSE_SPAWNING} StateType;
 
 class Spawner : public rclcpp::Node
 {
@@ -37,7 +39,7 @@ public:
   : rclcpp::Node("spawner_controller"), state_(STARTING)
   {
     comm_errors_ = 0;
-    this->declare_parameter("pub_frequency", 0.5); // 0.125 is default value to be published
+    this->declare_parameter("pub_frequency", 0.5); // 0.5Hz is default value to be published
   }
 
   void init()
@@ -59,6 +61,8 @@ public:
     alive_publisher_timer_ = this->create_wall_timer(
         milliseconds((int)(1000.0 / pub_frequency)),
         bind(&Spawner::publishAliveTurtles, this));
+
+    RCLCPP_INFO(this->get_logger(), "Spawner node initialized");
   }
 
   void step()
@@ -84,10 +88,25 @@ public:
             break;
       }
       case SPAWNING:
-      {     if(counter_ < 6)
+      {     if(alive_turtles_.size() < 4)
                 spawnNewTurtle();
             else
-                setState(PAUSE);
+                setState(PAUSE_SPAWNING);
+            break;
+      }
+      case PAUSE_SPAWNING:
+      {   
+            if(alive_turtles_.size() > 0)
+                checkForEatenTurtles();
+
+            if(alive_turtles_.size() == 0)
+            {
+                setState(SPAWNING);
+                RCLCPP_INFO(this->get_logger(), "Restart spawning now!");
+            }
+            else
+                RCLCPP_INFO(this->get_logger(), "Not the moment to spawn yet... still %d turtles around", alive_turtles_.size());
+            
             break;
       }
       default:
@@ -143,29 +162,56 @@ private:
 
         this-> counter_ = 2;
 
-        done = done && problem_expert_->addPredicate(Predicate("(control turtle1)"));
-        done = done && problem_expert_->addPredicate(Predicate("(targetfree turtle1)"));
-        done = done && problem_expert_->addPredicate(Predicate("(alive turtle1)"));
+        done = done && problem_expert_->addPredicate(Predicate{"(control turtle1)"});
+        done = done && problem_expert_->addPredicate(Predicate{"(targetfree turtle1)"});
+        done = done && problem_expert_->addPredicate(Predicate{"(alive turtle1)"});
 
         done = done && problem_expert_->addInstance(Instance{"px5_54", "pos"});
         done = done && problem_expert_->addInstance(Instance{"py5_54", "pos"});
 
-        done = done && problem_expert_->addPredicate(Predicate("(posx turtle1 px5_54)"));
-        done = done && problem_expert_->addPredicate(Predicate("(posy turtle1 py5_54)"));
+        done = done && problem_expert_->addPredicate(Predicate{"(posx turtle1 px5_54)"});
+        done = done && problem_expert_->addPredicate(Predicate{"(posy turtle1 py5_54)"});
 
-        done = done && problem_expert_->addFunction(Function("(turtleseaten turtle1 0)"));
+        done = done && problem_expert_->addFunction(Function{"(turtleseaten turtle1 0)"});
 
         return done;
     }
 
+    void checkForEatenTurtles()
+    {
+        for(Instance ins : problem_expert_->getInstances())
+        {
+            if(ins.type == "turtle" && 
+                (!problem_expert_->existPredicate(Predicate{"(alive " + ins.name + ")"}) || problem_expert_->existPredicate(Predicate{"(eaten " + ins.name + ")"}) ))
+                removeTurtle(ins.name);
+        }
+
+
+        //DOUBLE CHECK FOR EATEN TURTLES (disappeared from KB... because of cleanup already happened)
+        for(TurtleSpawn t : alive_turtles_)
+        {   
+            bool found = false;
+            for(Instance ins : problem_expert_->getInstances())
+                if(ins.name == t.name)
+                {
+                    found = true;
+                    break;
+                }
+
+            if(!found)
+                removeTurtle(t.name);
+        }
+    }
+
     void spawnNewTurtle()
     {
+        //spawn_lock.lock();
         float x = getRandomX();
         float y = getRandomY();
         float theta = getRandomTheta();
         string name = "turtle" + std::to_string(counter_);
 
-        RCLCPP_INFO(this->get_logger(),  "[spawner_controller]: Spawning " + name + " in x: %.2f, y: %.2f, theta: %.2f,", x, y, theta);
+        RCLCPP_INFO(this->get_logger(),  "Spawning " + name + " in x: %.2f, y: %.2f, theta: %.2f,", x, y, theta);
         
         shared_ptr<thread> thr = 
             std::make_shared<thread>(bind(&Spawner::callSpawnTurtleService, this, counter_, x, y, theta, name));
@@ -197,15 +243,17 @@ private:
                 addTurtle(name, x, y, theta);
                 
                 problem_expert_->addInstance(Instance{response->name, "turtle"});
-                problem_expert_->addPredicate(Predicate("(alive " + response->name +")"));
-                problem_expert_->addFunction(Function("(distance turtle1 " + response->name + " 11)"));
+                problem_expert_->addPredicate(Predicate{"(alive " + response->name +")"});
+                problem_expert_->addFunction(Function{"(distance turtle1 " + response->name + " 11)"});
                 
                 string px = extractPosName("px", x);
                 string py = extractPosName("py", y);
                 problem_expert_->addInstance(Instance{px, "pos"});
                 problem_expert_->addInstance(Instance{py, "pos"});
-                problem_expert_->addPredicate(Predicate("(posx " + response->name + " " + px + ")"));
-                problem_expert_->addPredicate(Predicate("(posy " + response->name + " " + py + ")"));
+                problem_expert_->addPredicate(Predicate{"(posx " + response->name + " " + px + ")"});
+                problem_expert_->addPredicate(Predicate{"(posy " + response->name + " " + py + ")"});
+
+                //spawn_lock.unlock();
             }
 
         }catch(const std::exception &e){
@@ -254,6 +302,7 @@ private:
     StateType state_;
     int comm_errors_;
     std::shared_ptr<ProblemExpertClient> problem_expert_;
+    mutex spawn_lock;
 
     int counter_;
     vector<TurtleSpawn> alive_turtles_;
