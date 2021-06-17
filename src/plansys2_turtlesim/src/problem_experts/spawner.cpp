@@ -53,7 +53,7 @@ public:
     }
 
     
-    problem_expert_ = std::make_shared<ProblemExpertClient>(shared_from_this());
+    problem_expert_ = std::make_shared<ProblemExpertClient>();
     srand (static_cast <unsigned> (time(0)));//for random generation
 
     alive_turtles_publisher_ = this->create_publisher<TurtleArray>("alive_turtles", 10);

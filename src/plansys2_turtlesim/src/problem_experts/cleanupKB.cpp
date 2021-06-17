@@ -30,7 +30,7 @@ public:
 
   void init()
   {
-    problem_expert_ = std::make_shared<ProblemExpertClient>(shared_from_this());
+    problem_expert_ = std::make_shared<ProblemExpertClient>();
     RCLCPP_INFO(this->get_logger(), "Cleanup node initialized");
   }
 
