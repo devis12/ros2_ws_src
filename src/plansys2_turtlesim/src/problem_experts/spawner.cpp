@@ -16,6 +16,7 @@
 using std::string;
 using std::vector;
 using std::shared_ptr;
+using std::chrono::seconds;
 using std::chrono::milliseconds;
 using std::thread;
 using std::bind;
@@ -40,6 +41,7 @@ public:
   {
     comm_errors_ = 0;
     this->declare_parameter("pub_frequency", 0.5); // 0.5Hz is default value to be published
+    problem_expert_up_ = false;
   }
 
   void init()
@@ -62,55 +64,62 @@ public:
         milliseconds((int)(1000.0 / pub_frequency)),
         bind(&Spawner::publishAliveTurtles, this));
 
+    do_work_timer_ = this->create_wall_timer(
+        seconds(4),
+        bind(&Spawner::step, this));
+
     RCLCPP_INFO(this->get_logger(), "Spawner node initialized");
   }
 
   void step()
   {
-    
-    switch (state_) {
-      case STARTING:
-      {
-            // check problem expert alive to init knowledge before spawning
-            if(isProblemExpertActive()){
+    // check problem expert alive to init knowledge before spawning
+    if(problem_expert_up_ || isProblemExpertActive()){
+        problem_expert_up_ = true;
+        if(alive_turtles_.size() > 0)
+            checkForEatenTurtles();
+
+        switch (state_) {
+        case STARTING:
+        {
+                
                 if(initKnowledge())
                     setState(SPAWNING);
                 else{
+                    problem_expert_up_ = false;
                     RCLCPP_ERROR(this->get_logger(), "Impossible to communicate with problem expert");
                     comm_errors_++;
                 }
-            }else
-                comm_errors_++;
 
-            if(comm_errors_ > 4)
-                rclcpp::shutdown();
+                break;
+        }
+        case SPAWNING:
+        {     if(alive_turtles_.size() < 4)
+                    spawnNewTurtle();
+                else
+                    setState(PAUSE_SPAWNING);
+                break;
+        }
+        case PAUSE_SPAWNING:
+        {   
+                if(alive_turtles_.size() < 2)
+                {
+                    setState(SPAWNING);
+                    RCLCPP_INFO(this->get_logger(), "Restart spawning now!");
+                }
+                else
+                    RCLCPP_INFO(this->get_logger(), "Not the moment to spawn yet... still %d turtles around", alive_turtles_.size());
+                
+                break;
+        }
+        default:
+            break;
+        }
+    }else{
+        comm_errors_++;
 
-            break;
-      }
-      case SPAWNING:
-      {     if(alive_turtles_.size() < 4)
-                spawnNewTurtle();
-            else
-                setState(PAUSE_SPAWNING);
-            break;
-      }
-      case PAUSE_SPAWNING:
-      {   
-            if(alive_turtles_.size() > 0)
-                checkForEatenTurtles();
-
-            if(alive_turtles_.size() == 0)
-            {
-                setState(SPAWNING);
-                RCLCPP_INFO(this->get_logger(), "Restart spawning now!");
-            }
-            else
-                RCLCPP_INFO(this->get_logger(), "Not the moment to spawn yet... still %d turtles around", alive_turtles_.size());
-            
-            break;
-      }
-      default:
-        break;
+        if(comm_errors_ > 4)
+            rclcpp::shutdown();
     }
   }
 
@@ -151,7 +160,8 @@ private:
     bool isProblemExpertActive()
     {
         bool isUp = problem_expert_->addInstance(Instance{"turtles0", "turtle"});
-        problem_expert_->removeInstance(Instance{"turtles0", "turtle"});
+        if(isUp)
+          problem_expert_->removeInstance(Instance{"turtles0", "turtle"});
         return isUp;
     }
     
@@ -304,10 +314,12 @@ private:
     std::shared_ptr<ProblemExpertClient> problem_expert_;
     mutex spawn_lock;
 
+    bool problem_expert_up_;
     int counter_;
     vector<TurtleSpawn> alive_turtles_;
     rclcpp::Publisher<TurtleArray>::SharedPtr alive_turtles_publisher_;
     rclcpp::TimerBase::SharedPtr alive_publisher_timer_;
+    rclcpp::TimerBase::SharedPtr do_work_timer_;
 
     vector<shared_ptr<thread>> spawn_turtle_threads_;
 
@@ -321,15 +333,7 @@ int main(int argc, char ** argv)
   auto node = std::make_shared<Spawner>();
 
   node->init();
-
-  rclcpp::Rate rate(0.25);
-  while (rclcpp::ok()) {
-    node->step();
-
-    rate.sleep();
-    rclcpp::spin_some(node->get_node_base_interface());
-  }
-
+  rclcpp::spin(node);
   rclcpp::shutdown();
 
   return 0;

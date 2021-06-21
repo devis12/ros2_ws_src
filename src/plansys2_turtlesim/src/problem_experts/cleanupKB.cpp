@@ -72,7 +72,8 @@ private:
     bool isProblemExpertActive()
     {
         bool isUp = problem_expert_->addInstance(Instance{"turtleckb0", "turtle"});
-        problem_expert_->removeInstance(Instance{"turtleckb0", "turtle"});
+        if(isUp)
+          problem_expert_->removeInstance(Instance{"turtleckb0", "turtle"});
         return isUp;
     }
 
@@ -155,9 +156,8 @@ int main(int argc, char ** argv)
 
   rclcpp::Rate rate(0.125);
   while (rclcpp::ok()) {
-    node->step();
-
     rate.sleep();
+    node->step();
     rclcpp::spin_some(node->get_node_base_interface());
   }
 

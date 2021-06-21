@@ -36,13 +36,14 @@ public:
   : rclcpp::Node("computedistances"), state_(STARTING)
   {
     comm_errors_ = 0;
+    this->declare_parameter("controlled_name", "turtle1");
   }
 
   void init()
   {
     controlled_name_ = "turtle1";
     try{
-        controlled_name_ = this->get_parameter("controlled_name").as_double();
+        controlled_name_ = this->get_parameter("controlled_name").as_string();
     }catch(std::exception&){
         RCLCPP_ERROR(this->get_logger(), "controlled_name must be a string and will be automatically set to  \"turtle1\"");
         controlled_name_ = "turtle1";
@@ -99,7 +100,8 @@ private:
     bool isProblemExpertActive()
     {
         bool isUp = problem_expert_->addInstance(Instance{"turtled0", "turtle"});
-        problem_expert_->removeInstance(Instance{"turtled0", "turtle"});
+        if(isUp)
+          problem_expert_->removeInstance(Instance{"turtled0", "turtle"});
         return isUp;
     }
 
@@ -185,9 +187,8 @@ int main(int argc, char ** argv)
 
   rclcpp::Rate rate(8);
   while (rclcpp::ok()) {
-    node->step();
-
     rate.sleep();
+    node->step();
     rclcpp::spin_some(node->get_node_base_interface());
   }
 

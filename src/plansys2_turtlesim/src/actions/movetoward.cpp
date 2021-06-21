@@ -157,6 +157,9 @@ private:
             finish(true, 1.0, "Move toward completed");
         }
 
+        if(!cmd_vel_pub_->is_activated())
+            cmd_vel_pub_->on_activate();
+        
         cmd_vel_pub_->publish(msg);
 
         float progress_100 = ((progress_ * 100.0) < 100.0)? (progress_ * 100.0) : 100.0; 

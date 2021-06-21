@@ -77,7 +77,7 @@ def generate_launch_description():
         name='compdistances',
         namespace=namespace,
         output='screen',
-        parameters=[])
+        parameters=[{"controlled_name": "turtle1"}])
 
     cleanupKB = Node(
         package='plansys2_turtlesim',
