@@ -37,6 +37,7 @@ public:
   {
     comm_errors_ = 0;
     this->declare_parameter("controlled_name", "turtle1");
+    this->declare_parameter("agent_id", "agent1");
   }
 
   void init()
@@ -48,7 +49,7 @@ public:
         RCLCPP_ERROR(this->get_logger(), "controlled_name must be a string and will be automatically set to  \"turtle1\"");
         controlled_name_ = "turtle1";
     }
-
+    
     controlled_pose_subscriber_ = this->create_subscription<Pose>(
                 controlled_name_+"/pose", 10,
                 bind(&ComputeDistances::callbackControlledPose, this, _1));

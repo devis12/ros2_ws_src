@@ -26,11 +26,13 @@ public:
   : plansys2::ActionExecutorClient("eating", 250ms)
   {
     progress_ = 0.0;
+    this->declare_parameter("agent_id", "agent1");
   }
 
 private:
   void killTurtle(string turtlename)
   {
+    auto agent_id = this->get_parameter("agent_id").as_string();
     rclcpp::Client<Kill>::SharedPtr client_ = this->create_client<Kill>("kill");
       while(!client_->wait_for_service(std::chrono::seconds(1)))
           RCLCPP_WARN(this->get_logger(), "Waiting for /kill to be up");

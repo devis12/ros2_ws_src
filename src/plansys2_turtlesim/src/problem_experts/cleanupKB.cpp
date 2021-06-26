@@ -26,6 +26,7 @@ public:
   : rclcpp::Node("cleanupKB"), state_(STARTING)
   {
     comm_errors_ = 0;
+    this->declare_parameter("agent_id", "agent1");
   }
 
   void init()

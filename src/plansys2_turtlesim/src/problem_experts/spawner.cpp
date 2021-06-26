@@ -41,6 +41,7 @@ public:
   {
     comm_errors_ = 0;
     this->declare_parameter("pub_frequency", 0.5); // 0.5Hz is default value to be published
+    this->declare_parameter("agent_id", "agent1");
     problem_expert_up_ = false;
   }
 
@@ -233,7 +234,7 @@ private:
 
     void callSpawnTurtleService(int count, float x, float y, float theta, string name)
     {
-        
+        auto agent_id = this->get_parameter("agent_id").as_string();
         rclcpp::Client<Spawn>::SharedPtr client_ = this->create_client<Spawn>("spawn");
         while(!client_->wait_for_service(std::chrono::seconds(1)))
             RCLCPP_WARN(this->get_logger(), "Waiting for /spawn to be up");
