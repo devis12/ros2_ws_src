@@ -43,7 +43,7 @@ public:
         bind(&PrintProblem::printProblem, this));
 
     publish_problem_timer_ = this->create_wall_timer(
-        milliseconds((int)(1000.0 / 0.125)),
+        milliseconds((int)(1000.0 / 0.5)),
         bind(&PrintProblem::printProblem, this));
 
     
@@ -51,14 +51,14 @@ public:
 
 
     auto agent_id = this->get_parameter("agent_id").as_string();
-    string listen_agent_id;
+    
     if(agent_id == "agent1")
-        listen_agent_id = "agent2";
+        listen_agent_id_ = "agent2";
     else if(agent_id == "agent2")
-        listen_agent_id = "agent1";
+        listen_agent_id_ = "agent1";
 
     other_problem_subscriber_ = this->create_subscription<String>(
-                listen_agent_id+"/my_problem", 10,
+                "/"+listen_agent_id_+"/my_problem", 10,
                 bind(&PrintProblem::printProblemOther, this, _1));
 
     RCLCPP_INFO(this->get_logger(), "Print problem node initialized");
@@ -101,10 +101,11 @@ private:
 
     void printProblemOther(const String::SharedPtr msg)
     {
-        RCLCPP_WARN(this->get_logger(), msg->data);
+        RCLCPP_WARN(this->get_logger(), "" + this->listen_agent_id_  + " PROBLEM:\n\n" + msg->data);
     }
 
     bool problem_expert_up_;
+    string listen_agent_id_;
     std::shared_ptr<ProblemExpertClient> problem_expert_;
 
     string problem_;
