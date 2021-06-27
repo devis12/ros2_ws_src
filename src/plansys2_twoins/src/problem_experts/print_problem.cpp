@@ -43,8 +43,8 @@ public:
         bind(&PrintProblem::printProblem, this));
 
     publish_problem_timer_ = this->create_wall_timer(
-        milliseconds((int)(1000.0 / 0.5)),
-        bind(&PrintProblem::printProblem, this));
+        milliseconds((int)(1000.0 / 0.25)),
+        bind(&PrintProblem::publishProblem, this));
 
     
     problem_publisher_ = this->create_publisher<String>("my_problem", 10);
@@ -91,8 +91,10 @@ private:
 
     void publishProblem()
     {
+        RCLCPP_INFO(this->get_logger(), "PUBLISHER CALLBACK");
         if(problem_expert_up_ && problem_ != "")
         {
+            RCLCPP_INFO(this->get_logger(), "I'm going to publish my problem");
             auto msg = String();
             msg.data = problem_;
             problem_publisher_->publish(msg);
