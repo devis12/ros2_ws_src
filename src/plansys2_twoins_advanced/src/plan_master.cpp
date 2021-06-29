@@ -158,10 +158,10 @@ public:
       case EXECUTING_PLAN:
       {   
             auto feedback = executor_client_->getFeedBack();
-
             for (const auto & action_feedback : feedback.action_execution_status) {
-                RCLCPP_INFO(this->get_logger(), "[" + action_feedback.action + " " +
-                std::to_string(action_feedback.completion * 100.0) + "%]" + "\n");
+                if(action_feedback.EXECUTING)
+                    RCLCPP_INFO(this->get_logger(), "[" + action_feedback.action_full_name + " " +
+                    std::to_string(action_feedback.completion * 100.0) + "%]" + "\n");
             }
 
             if (!executor_client_->execute_and_check_plan() && executor_client_->getResult()) 
