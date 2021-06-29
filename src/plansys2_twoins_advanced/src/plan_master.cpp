@@ -92,7 +92,7 @@ public:
       case NO_GOAL:
       {
             // check problem expert alive to init knowledge before spawning
-            if(isProblemExpertActive())
+            if(problem_expert_up_ || isProblemExpertActive())
             {   
                 problem_expert_up_ = true;
                 comm_errors_ = 0;
