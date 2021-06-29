@@ -40,7 +40,7 @@ def generate_launch_description():
     ld = LaunchDescription()
     
     define_problem = Node(
-        package='plansys2_twoins',
+        package='plansys2_twoins_advanced',
         executable='define_problem',
         name='define_problem',
         namespace=namespace,
@@ -48,9 +48,42 @@ def generate_launch_description():
         parameters=[{"agent_id": AGENT_NAME}])
 
     print_problem = Node(
-        package='plansys2_twoins',
+        package='plansys2_twoins_advanced',
         executable='print_problem',
         name='print_problem',
+        namespace=namespace,
+        output='screen',
+        parameters=[{"agent_id": AGENT_NAME}]
+    )
+
+    action_movetoward = Node(
+        package='plansys2_twoins_advanced',
+        executable='movetoward',
+        name='movetoward',
+        namespace=namespace,
+        output='screen'
+    )
+
+    action_doclean = Node(
+        package='plansys2_twoins_advanced',
+        executable='doclean',
+        name='doclean',
+        namespace=namespace,
+        output='screen'
+    )
+
+    action_recharging = Node(
+        package='plansys2_twoins_advanced',
+        executable='recharge',
+        name='recharge',
+        namespace=namespace,
+        output='screen'
+    )
+
+    plan_master = Node(
+        package='plansys2_twoins_advanced',
+        executable='plan_master',
+        name='plan_master',
         namespace=namespace,
         output='screen',
         parameters=[{"agent_id": AGENT_NAME}]
@@ -63,8 +96,16 @@ def generate_launch_description():
     # Declare the launch options
     ld.add_action(plansys2_cmd)
 
-    # Problem experts nodes
+    # Problem expert nodes
     ld.add_action(define_problem)
     ld.add_action(print_problem)
+
+    #Action performer nodes
+    ld.add_action(action_movetoward)
+    ld.add_action(action_doclean)
+    ld.add_action(action_recharging)
+    
+    #Plan Master
+    ld.add_action(plan_master)
 
     return ld

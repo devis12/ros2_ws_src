@@ -23,7 +23,7 @@
 
     (:durative-action movetoward
         :parameters (?r - robot ?wp_from ?wp_to - waypoint)
-        :duration (= ?duration 2)
+        :duration (= ?duration 4)
         :condition (and
             (at start (in ?r ?wp_from))
             (at start (workfree ?r))
@@ -38,7 +38,7 @@
         )
     )
 
-    (:durative-action clean
+    (:durative-action doclean
         :parameters (?r - robot ?wp - waypoint)
         :duration (= ?duration 4)
         :condition (and
