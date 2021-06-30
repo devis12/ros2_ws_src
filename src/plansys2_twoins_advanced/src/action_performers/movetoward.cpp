@@ -47,8 +47,9 @@ int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<MoveToward>();
-
-  node->set_parameter(rclcpp::Parameter("action_name", "movetoward"));
+  node->declare_parameter("action_suffix", "");
+  string action_suffix = node->get_parameter("action_suffix").as_string();
+  node->set_parameter(rclcpp::Parameter("action_name", "movetoward"+action_suffix));
 
   //action node, once created, must pass to inactive state to be ready to execute. 
   // ActionExecutorClient is a managed node (https://design.ros2.org/articles/node_lifecycle.html)

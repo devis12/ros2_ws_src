@@ -80,7 +80,7 @@ public:
     goal_string_ = getGoalString();
 
     do_work_timer_ = this->create_wall_timer(
-    milliseconds(125),
+    milliseconds(500),
     bind(&PlanMaster::step, this));
 
     RCLCPP_INFO(this->get_logger(), "Plan master node initialized");
@@ -159,7 +159,7 @@ public:
       {   
             auto feedback = executor_client_->getFeedBack();
             for (const auto & action_feedback : feedback.action_execution_status) {
-                if(action_feedback.EXECUTING)
+                if(action_feedback.EXECUTING && action_feedback.completion > 0.0 && action_feedback.completion < 1.0)
                     RCLCPP_INFO(this->get_logger(), "[" + action_feedback.action_full_name + " " +
                     std::to_string(action_feedback.completion * 100.0) + "%]" + "\n");
             }
