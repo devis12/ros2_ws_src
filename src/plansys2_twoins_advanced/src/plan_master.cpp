@@ -159,7 +159,7 @@ public:
       {   
             auto feedback = executor_client_->getFeedBack();
             for (const auto & action_feedback : feedback.action_execution_status) {
-                if(action_feedback.EXECUTING)
+                if(action_feedback.EXECUTING && action_feedback.completion > 0.0 && action_feedback.completion < 1.0)
                     RCLCPP_INFO(this->get_logger(), "[" + action_feedback.action_full_name + " " +
                     std::to_string(action_feedback.completion * 100.0) + "%]" + "\n");
             }
