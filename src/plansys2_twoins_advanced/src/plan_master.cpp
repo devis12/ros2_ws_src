@@ -14,6 +14,8 @@
 #include "plansys2_planner/PlannerClient.hpp"
 #include "plansys2_problem_expert/ProblemExpertClient.hpp"
 
+#include "plansys2_msgs/srv/affect_param.hpp"
+
 #include "example_interfaces/msg/string.hpp"
 
 using std::string;
@@ -35,6 +37,8 @@ using plansys2::Instance;
 using plansys2::Predicate;
 using plansys2::Goal;
 
+using plansys2_msgs::srv::AffectParam;
+
 using example_interfaces::msg::String;
 
 typedef enum {NO_GOAL, COMPUTE_PLAN, EXECUTING_PLAN} StateType;
@@ -50,17 +54,19 @@ public:
 
   void init()
   { 
-   
+    RCLCPP_INFO(this->get_logger(), "Plan master a");
     domain_expert_ = std::make_shared<plansys2::DomainExpertClient>();
+    RCLCPP_INFO(this->get_logger(), "Plan master b");
     planner_client_ = std::make_shared<plansys2::PlannerClient>();
+    RCLCPP_INFO(this->get_logger(), "Plan master c");
     problem_expert_ = std::make_shared<plansys2::ProblemExpertClient>();
+    RCLCPP_INFO(this->get_logger(), "Plan master d");
     executor_client_ = std::make_shared<plansys2::ExecutorClient>();
+    RCLCPP_INFO(this->get_logger(), "Plan master e");
     
 
     problem_expert_up_ = false;
     comm_errors_ = 0;
-
-    problem_expert_ = std::make_shared<ProblemExpertClient>();
 
     
     agent_id_ = this->get_parameter("agent_id").as_string();
@@ -80,7 +86,7 @@ public:
     goal_string_ = getGoalString();
 
     do_work_timer_ = this->create_wall_timer(
-    milliseconds(125),
+    milliseconds(500),
     bind(&PlanMaster::step, this));
 
     RCLCPP_INFO(this->get_logger(), "Plan master node initialized");
@@ -109,7 +115,7 @@ public:
                 comm_errors_++;
             }
 
-            if(comm_errors_ > 4)
+            if(comm_errors_ > 16)
                 rclcpp::shutdown();
 
             break;
@@ -190,7 +196,13 @@ public:
 private:
     
     bool isProblemExpertActive()
-    {   
+    {                   
+        rclcpp::Client<AffectParam>::SharedPtr client_ = this->create_client<AffectParam>("problem_expert/add_problem_instance");
+        while(!client_->wait_for_service(std::chrono::seconds(1))){
+            RCLCPP_WARN(this->get_logger(), "Waiting for problem_expert/add_problem_instance server to be up");
+            return false;
+        }
+
         auto test_name = "plm" + agent_id_ + "_wyp";
         RCLCPP_INFO(this->get_logger(), "Ready to define test instance " + test_name);
         bool isUp = problem_expert_->addInstance(Instance{test_name, "waypoint"});

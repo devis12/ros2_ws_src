@@ -29,7 +29,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(os.path.join(
             get_package_share_directory('plansys2_bringup'),
             'launch',
-            'plansys2_bringup_launch_monolithic.py')),
+            'plansys2_bringup_launch_distributed.py')),
 
         launch_arguments={
             'model_file': ps2_two_share_dir + '/pddl/cleaner-domain.pddl',
@@ -61,7 +61,8 @@ def generate_launch_description():
         executable='movetoward',
         name='movetoward',
         namespace=namespace,
-        output='screen'
+        output='screen',
+        parameters=[{"agent_name": AGENT_NAME}]
     )
 
     action_doclean = Node(
@@ -69,7 +70,8 @@ def generate_launch_description():
         executable='doclean',
         name='doclean',
         namespace=namespace,
-        output='screen'
+        output='screen',
+        parameters=[{"agent_name": AGENT_NAME}]
     )
 
     action_recharging = Node(
@@ -77,7 +79,8 @@ def generate_launch_description():
         executable='recharge',
         name='recharge',
         namespace=namespace,
-        output='screen'
+        output='screen',
+        parameters=[{"agent_name": AGENT_NAME}]
     )
 
     plan_master = Node(

@@ -5,7 +5,7 @@
 #include "plansys2_problem_expert/ProblemExpertClient.hpp"
 
 #include "plansys2_pddl_parser/Utils.h"
-
+#include "plansys2_msgs/srv/affect_param.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 using std::string;
@@ -18,6 +18,8 @@ using plansys2::Instance;
 using plansys2::Predicate;
 using plansys2::Function;
 using plansys2::Goal;
+
+using plansys2_msgs::srv::AffectParam;
 
 typedef enum {STARTING, DEFINE, PAUSE} StateType;
 
@@ -87,7 +89,7 @@ public:
     }else{
         comm_errors_++;
 
-        if(comm_errors_ > 4)
+        if(comm_errors_ > 16)
             rclcpp::shutdown();
     }
   }
@@ -100,6 +102,13 @@ private:
 
     bool isProblemExpertActive()
     {   
+        
+        rclcpp::Client<AffectParam>::SharedPtr client_ = this->create_client<AffectParam>("problem_expert/add_problem_instance");
+        while(!client_->wait_for_service(std::chrono::seconds(1))){
+            RCLCPP_WARN(this->get_logger(), "Waiting for problem_expert/add_problem_instance server to be up");
+            return false;
+        }
+
         auto test_name = "pd" + agent_id_ + "_wyp";
         RCLCPP_INFO(this->get_logger(), "Ready to define test instance " + test_name);
         bool isUp = problem_expert_->addInstance(Instance{test_name, "waypoint"});
