@@ -30,7 +30,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(os.path.join(
             get_package_share_directory('plansys2_bringup'),
             'launch',
-            'plansys2_bringup_launch_monolithic.py')),
+            'plansys2_bringup_launch_distributed.py')),
 
         launch_arguments={
             'model_file': ps2_two_share_dir + '/pddl/cleaner-domain2.pddl',

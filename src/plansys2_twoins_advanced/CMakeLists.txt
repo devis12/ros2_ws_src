@@ -34,7 +34,7 @@ set(psys2_plan_exec
 )
 
 add_executable(define_problem src/problem_experts/define_problem.cpp)
-ament_target_dependencies(define_problem ${psys2_problem_exp_dep} plansys2_pddl_parser)
+ament_target_dependencies(define_problem ${psys2_problem_exp_dep} plansys2_pddl_parser plansys2_msgs)
 
 add_executable(print_problem src/problem_experts/print_problem.cpp)
 ament_target_dependencies(print_problem ${psys2_problem_exp_dep} example_interfaces)
