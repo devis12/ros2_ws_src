@@ -47,9 +47,14 @@ int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<DoClean>();
-  node->declare_parameter("action_suffix", "");
-  string action_suffix = node->get_parameter("action_suffix").as_string();
-  node->set_parameter(rclcpp::Parameter("action_name", "doclean"+action_suffix));
+  
+  node->declare_parameter("agent_name", "agent0");
+  string agent_name = node->get_parameter("agent_name").as_string();
+  vector<string> specialized_arguments = vector<string>();
+  specialized_arguments.push_back(agent_name);
+
+  node->set_parameter(rclcpp::Parameter("action_name", "doclean"));
+  node->set_parameter(rclcpp::Parameter("specialized_arguments", specialized_arguments));
 
   //action node, once created, must pass to inactive state to be ready to execute. 
   // ActionExecutorClient is a managed node (https://design.ros2.org/articles/node_lifecycle.html)

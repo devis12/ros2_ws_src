@@ -11,7 +11,6 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     AGENT_NAME = "agent2"
-    ACTION_SUFF = "_ag2"
     
     ps2_two_share_dir = get_package_share_directory('plansys2_twoins_advanced')
     
@@ -33,7 +32,7 @@ def generate_launch_description():
             'plansys2_bringup_launch_distributed.py')),
 
         launch_arguments={
-            'model_file': ps2_two_share_dir + '/pddl/cleaner-domain2.pddl',
+            'model_file': ps2_two_share_dir + '/pddl/cleaner-domain.pddl',
             'namespace': namespace
             }.items()
     )
@@ -63,7 +62,7 @@ def generate_launch_description():
         name='movetoward',
         namespace=namespace,
         output='screen',
-        parameters=[{"action_suffix": ACTION_SUFF}]
+        parameters=[{"agent_name": AGENT_NAME}]
     )
 
     action_doclean = Node(
@@ -72,7 +71,7 @@ def generate_launch_description():
         name='doclean',
         namespace=namespace,
         output='screen',
-        parameters=[{"action_suffix": ACTION_SUFF}]
+        parameters=[{"agent_name": AGENT_NAME}]
     )
 
     action_recharging = Node(
@@ -81,7 +80,7 @@ def generate_launch_description():
         name='recharge',
         namespace=namespace,
         output='screen',
-        parameters=[{"action_suffix": ACTION_SUFF}]
+        parameters=[{"agent_name": AGENT_NAME}]
     )
 
     plan_master = Node(
