@@ -41,7 +41,7 @@ using plansys2_msgs::srv::AffectParam;
 
 using example_interfaces::msg::String;
 
-typedef enum {NO_GOAL, COMPUTE_PLAN, EXECUTING_PLAN} StateType;
+typedef enum {NO_GOAL, COMPUTE_PLAN, EXECUTING_PLAN, OFF} StateType;
 
 class PlanMaster : public rclcpp::Node
 {
@@ -50,6 +50,7 @@ public:
   : rclcpp::Node("plan_master"), state_(NO_GOAL)
   {
     this->declare_parameter("agent_id", "agent0");
+    this->declare_parameter("cancel_prob", 0.0);
   }
 
   void init()
@@ -64,6 +65,7 @@ public:
     executor_client_ = std::make_shared<plansys2::ExecutorClient>();
     RCLCPP_INFO(this->get_logger(), "Plan master e");
     
+    srand (static_cast <unsigned> (time(0)));//for random generation
 
     problem_expert_up_ = false;
     comm_errors_ = 0;
@@ -163,30 +165,51 @@ public:
       }
       case EXECUTING_PLAN:
       {   
-            auto feedback = executor_client_->getFeedBack();
-            for (const auto & action_feedback : feedback.action_execution_status) {
-                if(action_feedback.EXECUTING && action_feedback.completion > 0.0 && action_feedback.completion < 1.0)
-                    RCLCPP_INFO(this->get_logger(), "[" + action_feedback.action_full_name + " " +
-                    std::to_string(action_feedback.completion * 100.0) + "%]" + "\n");
-            }
+            double cancel_plan_prob = this->get_parameter("cancel_prob").as_double();
+            bool cancel = (cancel_plan_prob >= 1) || 
+                (cancel_plan_prob > 0 && (rand() % ((static_cast<int>(cancel_plan_prob*100))+1)) == 0);
 
-            if (!executor_client_->execute_and_check_plan() && executor_client_->getResult()) 
+            if(cancel)
             {
-                if (executor_client_->getResult().value().success)
+                executor_client_->cancel_plan_execution();
+                auto msg = String();
+                msg.data = " I am going to cancel the execution of the plan because Devis has ordered me to";
+                mygoal_publisher_->publish(msg);
+
+                RCLCPP_WARN(this->get_logger(), "Cancel plan execution because Devis has ordered me to");
+                setState(OFF);
+            }
+            else
+            {
+                auto feedback = executor_client_->getFeedBack();
+                for (const auto & action_feedback : feedback.action_execution_status) {           
+                    if(action_feedback.EXECUTING && action_feedback.completion > 0.0 && action_feedback.completion < 1.0)
+                        RCLCPP_INFO(this->get_logger(), "[ " + action_feedback.action_full_name + "  %.2f %]\n", 
+                            action_feedback.completion * 100.0);
+                }
+
+                if (!executor_client_->execute_and_check_plan() && executor_client_->getResult()) 
                 {
-                    RCLCPP_INFO(this->get_logger(),"Successful finished \n");
+                    if (executor_client_->getResult().value().success)
+                    {
+                        RCLCPP_INFO(this->get_logger(),"Successful finished \n");
 
-                    auto msg = String();
-                    msg.data = " I have completed the plan to fulfill the goal: " + goal_string_;
-                    mygoal_publisher_->publish(msg);
+                        auto msg = String();
+                        msg.data = " I have completed the plan to fulfill the goal: " + goal_string_;
+                        mygoal_publisher_->publish(msg);
 
-                    goal_string_ = "";
-                    setState(NO_GOAL);
-                }        
-            }   
-
+                        goal_string_ = "";
+                        setState(NO_GOAL);
+                    }        
+                }   
+            }
             break;
           
+      }
+      case OFF:
+      {
+          rclcpp::shutdown();
+          break;
       }
       default:
         break;

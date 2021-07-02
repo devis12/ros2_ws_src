@@ -89,7 +89,10 @@ def generate_launch_description():
         name='plan_master',
         namespace=namespace,
         output='screen',
-        parameters=[{"agent_id": AGENT_NAME}]
+        parameters=[
+            {"agent_id": AGENT_NAME},
+            {"cancel_prob": 0.02} #Probability of cancelling plan execution
+        ]
     )
 
     # Set environment variables
