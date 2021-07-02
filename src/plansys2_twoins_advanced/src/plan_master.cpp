@@ -166,9 +166,10 @@ public:
       case EXECUTING_PLAN:
       {   
             double cancel_plan_prob = this->get_parameter("cancel_prob").as_double();
+            int gen = rand() % 101;
             bool cancel = (cancel_plan_prob >= 1) || 
-                (cancel_plan_prob > 0 && (rand() % ((static_cast<int>(cancel_plan_prob*100))+1)) == 0);
-
+                (cancel_plan_prob > 0 && (gen) <= (cancel_plan_prob*100));
+            //RCLCPP_WARN(this->get_logger(), "Cancel plan prob %.2f%\t generated: %d",(cancel_plan_prob*100), gen);
             if(cancel)
             {
                 executor_client_->cancel_plan_execution();
