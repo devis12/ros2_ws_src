@@ -9,10 +9,10 @@ class AddTwoIntsServerNode(Node):
 
     def __init__(self):
         super().__init__("add_two_ints_server") # Node is NOT the executable, therefore name of the node doesn't have to have same name of the file 
-        self.server_ = self.create_service(AddTwoInts, "add_two_ints", self.callback_add_two_ints)
+        self.server_ = self.create_service(AddTwoInts, "add_two_ints", self.srv_callback_add_two_ints)
         self.get_logger().info("Add two ints server has been started")
     
-    def callback_add_two_ints(self, request, response):
+    def srv_callback_add_two_ints(self, request, response):
         response.sum = request.a + request.b
         self.get_logger().info("{0} + {1} = {2}".format(request.a, request.b, response.sum))
         return response # if you forget to return response, you'll get an error when calling service

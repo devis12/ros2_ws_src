@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<robot name="my_robot_arm" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    
+    <xacro:include filename="common_properties.urdf.xacro" />
+    <link name="base_footprint" /> 
+    <xacro:include filename="arm.xacro" />
+    <xacro:include filename="arm_gazebo.xacro" />
+
+    <xacro:arm_module parent_link="base_footprint" ox="0" oz="0"/>
+
+</robot>

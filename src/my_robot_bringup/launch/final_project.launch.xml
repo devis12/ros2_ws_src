@@ -1,0 +1,23 @@
+<launch>
+    <arg name="container_name" default="my_container"/>
+    <let name="turtle1_name" value="turtle_1" />
+    <let name="turtle2_name" value="turtle_2" />
+
+    <node pkg="rclcpp_components" exec="component_container_mt" name="$(var container_name)" output="screen" />
+
+    <!-- Start turtlesim and kill default turtle -->
+    <node pkg="turtlesim" exec="turtlesim_node" name="turtlesim" output="screen" />
+    <executable cmd="ros2 service call /kill turtlesim/srv/Kill 'name: turtle1'" output="screen" />
+    
+    <!-- Start turtle_move server -->
+    <executable cmd="ros2 component load /$(var container_name) components_cpp my_namespace::TurtleMoveServer -r __node:=move_$(var turtle1_name)_server -p turtle_name:=$(var turtle1_name)" output="screen" />
+    <executable cmd="ros2 component load /$(var container_name) components_cpp my_namespace::TurtleMoveServer -r __node:=move_$(var turtle2_name)_server -p turtle_name:=$(var turtle2_name)" output="screen" />
+
+    <!-- Activate lifecycle nodes -->
+    <node pkg="lifecycle_py" exec="lifecycle_manager" name="lifecycle_manager" output="screen">
+        <param name="managed_node_name" value="move_$(var turtle1_name)_server" />
+    </node>
+    <node pkg="lifecycle_py" exec="lifecycle_manager" name="lifecycle_manager" output="screen">
+        <param name="managed_node_name" value="move_$(var turtle2_name)_server" />
+    </node>
+</launch>

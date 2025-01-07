@@ -1,0 +1,10 @@
+float64 linear_vel_x
+float64 angular_vel_z
+float64 duration
+---
+geometry_msgs/Pose2D position
+string message
+float64 time_passed
+---
+geometry_msgs/Pose2D current_position
+float64 time_passed

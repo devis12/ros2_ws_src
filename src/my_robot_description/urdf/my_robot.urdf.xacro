@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<robot name="my_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    
+    <xacro:include filename="common_properties.urdf.xacro" />
+    <xacro:include filename="mobile_base.urdf.xacro" />
+    <xacro:include filename="mobile_base_gazebo.urdf.xacro" />
+    
+    <xacro:include filename="arm.xacro" />
+    <xacro:include filename="arm_gazebo.xacro" />
+
+    <xacro:arm_module parent_link="base_link" ox="${base_length/4}" oz="${base_height}" />
+
+    <xacro:include filename="camera.xacro" />
+</robot>

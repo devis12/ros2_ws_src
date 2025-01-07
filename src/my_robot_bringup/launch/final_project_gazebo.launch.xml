@@ -1,0 +1,17 @@
+<launch>
+    <!-- Launch file gazebo sim with turtlebot -->
+    <set_env name="TURTLEBOT3_MODEL" value="waffle"/>
+    <include file="$(find-pkg-share turtlebot3_gazebo)/launch/empty_world.launch.py"/>
+
+    <arg name="container_name" default="my_container"/>
+
+    <node pkg="rclcpp_components" exec="component_container_mt" name="$(var container_name)" output="screen" />
+    
+    <!-- Start turtlebot_move server -->
+    <executable cmd="ros2 component load /$(var container_name) components_cpp my_namespace::TurtleBotMoveServer -r __node:=move_turtlebot_server" output="screen" />
+
+    <!-- Activate lifecycle nodes -->
+    <node pkg="lifecycle_py" exec="lifecycle_manager" name="lifecycle_manager" output="screen">
+        <param name="managed_node_name" value="move_turtlebot_server" />
+    </node>
+</launch>

@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+    
+    <xacro:property name="camera_length" value="0.01"/>
+    <xacro:property name="camera_width" value="0.1"/>
+    <xacro:property name="camera_height" value="0.05"/>
+    <link name="camera_link">
+        <visual>
+            <geometry>
+                <box size="${camera_length} ${camera_width} ${camera_height}" />
+            </geometry>
+            <material name="gray" />
+        </visual>
+        <collision>
+            <geometry>
+                <box size="0.01 0.1 0.5" />
+            </geometry>
+        </collision>
+        <xacro:box_inertia m="0.001" l="${camera_length}" w="${camera_width}" h="${camera_height}"
+                            xyz="0 0 0" rpy="0 0 0" />
+    </link>
+
+    <joint name="base_camera_joint" type="fixed">
+        <parent link="base_link" />
+        <child link="camera_link" />
+        <origin xyz="${(base_length + camera_length)/2.0} 0 ${base_height / 2}" rpy="0 0 0" />
+    </joint>
+
+     <!-- generate an optical frame 
+      http://www.ros.org/reps/rep-0103.html#suffix-frames
+      so that ros and opencv can operate on the camera frame correctly 
+      -->
+  <joint name="camera_optical_joint" type="fixed">
+    <!-- these values have to be these values otherwise the gazebo camera
+        image won't be aligned properly with the frame it is supposedly
+        originating from -->
+    <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+    <parent link="camera_link"/>
+    <child link="camera_link_optical"/>
+  </joint>
+
+  <link name="camera_link_optical">
+  </link>
+
+    <gazebo reference="camera_link">
+        <material>Gazebo/Red</material>
+        <sensor name="camera_sensor" type="camera">
+            <pose>0 0 0 0 0 0</pose>
+            <visualize>true</visualize>
+            <update_rate>10.0</update_rate>
+            <camera>
+                <!--Specific sensor stuff-->
+            </camera>
+
+            <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+                <!-- <ros>
+                    <namespace>custom_ns</namespace>
+                    <remapping>image_raw:=custom_img</remapping>
+                    <remapping>camera_info:=custom_info</remapping>
+                    <remapping>image_trigger:=custom_trigger</remapping>
+                </ros> -->
+
+                <!-- Set camera name. If empty, defaults to sensor name -->
+                <!-- <camera_name>custom_camera</camera_name> -->
+
+                <!-- Set TF frame name. If empty, defaults to link name -->
+                <frame_name>camera_link_optical</frame_name>
+
+                <!-- Set to true to turn on triggering -->
+                <!-- <triggered>true</triggered> -->
+
+                <!-- Set some projection matrix fields-->
+                <!-- Projection matrix principal point cx-->
+                <!-- <P_cx>0</P_cx> -->
+                <!-- Projection matrix principal point cy-->
+                <!-- <P_cy>320.5</P_cy> -->
+                <!-- Projection matrix focal length fy-->
+                <!-- <P_fy>0</P_fy> -->
+                <!-- Projection matrix translation Tx, Ty between stereo cameras-->
+                <!-- <Tx>240.5</Tx>
+                <Ty>0</Ty> -->
+                <!-- Full 3x3 rectification matrix. Values are in row-major order -->
+                <!-- <rectification_matrix>0.999 0.0 -0.049 0.0 1.0 0.0 0.049 0.0 0.999</rectification_matrix>
+
+                <hack_baseline>0.07</hack_baseline> -->
+            </plugin>
+        </sensor>
+    </gazebo>
+</robot>

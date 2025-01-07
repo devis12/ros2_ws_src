@@ -13,13 +13,20 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 rosidl_generate_interfaces( ${PROJECT_NAME}
   "msg/HardwareStatus.msg"
   "msg/LedStates.msg"
   "srv/ComputeRectangleArea.srv"
   "srv/SetLed.srv"
+  "action/CountUntil.action"
+  "action/RobotMove.action"
   "action/Test.action"
+  "action/TurtleMove.action"
+  
+  DEPENDENCIES
+  geometry_msgs
 )
 
 ament_package()

@@ -26,6 +26,7 @@ setup(
             "number_publisher = my_py_pkg.number_publisher:main",
             "number_counter = my_py_pkg.number_counter:main",
             "add_two_ints_server = my_py_pkg.add_two_ints_server:main",
+            "add_two_ints_ext_server = my_py_pkg.add_two_ints_ext_server:main",
             "add_two_ints_client_no_oop = my_py_pkg.add_two_ints_client_no_oop:main",
             "add_two_ints_client = my_py_pkg.add_two_ints_client:main",
             "hw_status_publisher = my_py_pkg.hw_status_publisher:main",
@@ -34,7 +35,9 @@ setup(
             "action_server = my_py_pkg.action_server:main",
             "action_client = my_py_pkg.action_client:main",
             "ex_action_server = my_py_pkg.ex_action_server:main",
-            "ex_action_client = my_py_pkg.ex_action_client:main"
+            "ex_action_client = my_py_pkg.ex_action_client:main",
+            "count_until_server = my_py_pkg.count_until_server:main",
+            "count_until_client = my_py_pkg.count_until_client:main"
         ],
     },
 )

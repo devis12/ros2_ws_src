@@ -1,0 +1,21 @@
+<launch>
+    <arg name="namespace" default="" />
+    <let name="robot_1_name" value="c3po" />
+    <let name="robot_2_name" value="r2d2" />
+    <let name="robot_3_name" value="bb8" />
+
+    <node pkg="lifecycle_cpp" exec="robot_move_server" name="$(var robot_1_name)_move_server" output="screen">
+        <param name="robot_name" value="$(var robot_1_name)" />
+    </node>
+    <node pkg="lifecycle_cpp" exec="robot_move_server" name="$(var robot_2_name)_move_server" output="screen">
+        <param name="robot_name" value="$(var robot_2_name)" />
+    </node>
+    <node pkg="lifecycle_cpp" exec="robot_move_server" name="$(var robot_3_name)_move_server" output="screen">
+        <param name="robot_name" value="$(var robot_3_name)" />
+    </node>
+
+    <node pkg="lifecycle_cpp" exec="lifecycle_robot_move_manager" name="lifecycle_robot_move_manager" output="screen">
+        <param name="managed_node_names" value="[$(var robot_1_name)_move_server, $(var robot_2_name)_move_server, $(var robot_3_name)_move_server]" />
+    </node>
+    
+</launch>
